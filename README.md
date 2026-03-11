@@ -16,14 +16,14 @@ Interactive demo for the paper presented at IEM-ICDC 2026 by Divyansh Bhatia & N
 ### Step 1: Create a GitHub Repository
 
 1. Go to [github.com/new](https://github.com/new)
-2. Name it `qca-thg-demo` (or any name you prefer)
+2. Name it `qca-hierarchy` (or any name you prefer)
 3. Keep it **Public** (required for free GitHub Pages)
 4. Do **NOT** initialize with README (we already have one)
 5. Click **Create repository**
 
 ### Step 2: Update the Base Path
 
-> ⚠️ **Important:** If you chose a repo name different from `qca-thg-demo`, open `vite.config.js` and change the `base` value:
+> ⚠️ **Important:** If you chose a repo name different from `qca-hierarchy`, open `vite.config.js` and change the `base` value:
 
 ```js
 base: '/your-repo-name/',
@@ -45,7 +45,7 @@ git init
 git add .
 git commit -m "Initial commit: QCA-THG interactive demo"
 git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/qca-thg-demo.git
+git remote add origin https://github.com/YOUR_USERNAME/qca-hierarchy.git
 git push -u origin main
 ```
 
@@ -62,7 +62,7 @@ git push -u origin main
 - Once the green checkmark appears (1-2 minutes), your site is live at:
 
 ```
-https://YOUR_USERNAME.github.io/qca-thg-demo/
+https://YOUR_USERNAME.github.io/qca-hierarchy/
 ```
 
 ---
@@ -84,7 +84,7 @@ GitHub Actions will automatically rebuild and redeploy.
 ## 📁 Project Structure
 
 ```
-qca-thg-demo/
+qca-hierarchy/
 ├── .github/workflows/deploy.yml   ← Auto-deploy on push
 ├── src/
 │   ├── App.jsx                    ← The interactive demo (all-in-one)
