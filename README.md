@@ -6,99 +6,41 @@ Interactive demo for the paper presented at IEM-ICDC 2026 by Divyansh Bhatia & N
 
 ---
 
-## 🚀 Deploy to GitHub Pages (Step-by-Step)
+## Deploy to GitHub Pages
 
-### Prerequisites
-- [Git](https://git-scm.com/) installed
-- [Node.js](https://nodejs.org/) v18+ installed
-- A [GitHub](https://github.com/) account
-
-### Step 1: Create a GitHub Repository
-
-1. Go to [github.com/new](https://github.com/new)
-2. Name it `qca-hierarchy` (or any name you prefer)
-3. Keep it **Public** (required for free GitHub Pages)
-4. Do **NOT** initialize with README (we already have one)
-5. Click **Create repository**
-
-### Step 2: Update the Base Path
-
-> ⚠️ **Important:** If you chose a repo name different from `qca-hierarchy`, open `vite.config.js` and change the `base` value:
-
-```js
-base: '/your-repo-name/',
-```
-
-### Step 3: Test Locally (Optional)
+### Step 1: Install dependencies
 
 ```bash
+cd qca-hierarchy
 npm install
+```
+
+### Step 2: Test locally (optional)
+
+```bash
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser to preview.
-
-### Step 4: Push to GitHub
+### Step 3: Deploy
 
 ```bash
-git init
-git add .
-git commit -m "Initial commit: QCA-THG interactive demo"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/qca-hierarchy.git
-git push -u origin main
+npm run deploy
 ```
 
-### Step 5: Enable GitHub Pages
+This builds the site and pushes it to the `gh-pages` branch automatically.
 
-1. Go to your repo on GitHub
-2. Navigate to **Settings** → **Pages** (left sidebar)
-3. Under **Source**, select **GitHub Actions**
-4. That's it! The workflow will trigger automatically.
+### Step 4: Enable GitHub Pages (first time only)
 
-### Step 6: Wait & Visit
+1. Go to your repo → **Settings** → **Pages**
+2. Under **Source**, select **Deploy from a branch**
+3. Under **Branch**, select **`gh-pages`** and **`/ (root)`**
+4. Click **Save**
 
-- Go to the **Actions** tab to watch the build progress
-- Once the green checkmark appears (1-2 minutes), your site is live at:
-
+Your site will be live within a minute at:
 ```
-https://YOUR_USERNAME.github.io/qca-hierarchy/
+https://divyanshbhatia.github.io/qca-hierarchy/
 ```
 
----
+### Updating
 
-## 🔄 Updating the Demo
-
-Just edit the files and push:
-
-```bash
-git add .
-git commit -m "Update demo"
-git push
-```
-
-GitHub Actions will automatically rebuild and redeploy.
-
----
-
-## 📁 Project Structure
-
-```
-qca-hierarchy/
-├── .github/workflows/deploy.yml   ← Auto-deploy on push
-├── src/
-│   ├── App.jsx                    ← The interactive demo (all-in-one)
-│   └── main.jsx                   ← React entry point
-├── index.html                     ← HTML shell
-├── vite.config.js                 ← Build config (base path here)
-├── package.json                   ← Dependencies
-└── README.md                      ← This file
-```
-
----
-
-## 📄 Citation
-
-If you use this demo, please cite our paper:
-
-> Bhatia, D. & Mehala, N. (2026). Query-Context Aware Automatic Topic Hierarchy Generation for Educational Web Resources. In *Proceedings of 4th International Conference on Computational Intelligence, Data Science and Cloud Computing (IEM-ICDC 2026)*.
+After any changes, just run `npm run deploy` again.
