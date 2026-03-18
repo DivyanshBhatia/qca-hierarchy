@@ -248,37 +248,119 @@ function HierarchySection(){
 
 function HierarchyInteractive(){
   const[step,setStep]=useState(0);
-  const renderTree=(node,depth=0)=><div key={node.name} style={{marginLeft:depth*28,marginTop:6}}>
-    <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"5px 14px",borderRadius:8,background:node.isRefined?C.orange+"18":node.isNew?C.green+"18":C.surface,border:`1.5px solid ${node.isRefined?C.orange+"44":node.isNew?C.green+"44":C.border}`,transition:"all 0.4s"}}>
+  const renderTree=(node,depth=0)=><div key={node.name+depth} style={{marginLeft:depth*28,marginTop:6}}>
+    <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"5px 14px",borderRadius:8,background:node.highlight?node.highlight+"18":node.isRefined?C.orange+"18":node.isNew?C.green+"18":C.surface,border:`1.5px solid ${node.highlight?(node.highlight+"66"):node.isRefined?C.orange+"44":node.isNew?C.green+"44":C.border}`,transition:"all 0.4s",boxShadow:node.highlight?`0 0 12px ${node.highlight}22`:"none"}}>
       {depth>0&&<span style={{color:C.dim,fontSize:12}}>└─</span>}
-      <span style={{fontSize:14,fontWeight:600,color:node.isRefined?C.orange:node.isNew?C.green:C.text}}>{node.name}</span>
-      {node.isNew&&<span style={pill(C.green)}>new</span>}
+      <span style={{fontSize:14,fontWeight:600,color:node.highlight||(node.isRefined?C.orange:node.isNew?C.green:C.text)}}>{node.name}</span>
+      {node.isNew&&!node.tag&&<span style={pill(C.green)}>new</span>}
+      {node.tag&&<span style={pill(node.highlight||C.green)}>{node.tag}</span>}
       {node.isRefined&&<span style={pill(C.orange)}>Phase 1</span>}
     </div>
     {node.children?.map(c=>renderTree(c,depth+1))}
   </div>;
   const trees=[
-    {tree:{name:"Science",children:[{name:"Energy",children:[{name:"Fossil Fuels"},{name:"Nuclear"}]},{name:"Physics",children:[{name:"Mechanics"}]}]},desc:"Base hierarchy from DMOZ Open Directory Project. Clusters will be inserted into this structure using the 3-test sequence."},
-    {tree:{name:"Science",children:[{name:"Energy",children:[{name:"Fossil Fuels"},{name:"Nuclear"},{name:"Solar Energy",isNew:true}]},{name:"Physics",children:[{name:"Mechanics"}]}]},desc:"'Solar Energy' passes all 3 tests against 'Energy': Category Entropy = 0.72 ✓ (categories share information), Importance Measure = 0.65 ✓ (shared terms are meaningful), Coverage Degree: Solar→Energy = 0.63 > Energy→Solar = 0.21 → Solar is CHILD of Energy."},
-    {tree:{name:"Science",children:[{name:"Energy",children:[{name:"Fossil Fuels"},{name:"Nuclear"},{name:"Solar Energy",isNew:true},{name:"Wind Energy",isNew:true}]},{name:"Physics",children:[{name:"Mechanics"},{name:"Thermodynamics",isNew:true}]}]},desc:"'Wind Energy' → child of Energy (Coverage Degree = 0.59 > 0.21). 'Thermodynamics' → sibling of Mechanics (passes Category Entropy and Importance tests but Coverage Degree doesn't indicate containment)."},
-    {tree:{name:"Science",children:[{name:"Energy",children:[{name:"Fossil Fuels"},{name:"Nuclear"},{name:"Renewable",isRefined:true,children:[{name:"Solar Energy",isNew:true},{name:"Wind Energy",isNew:true}]}]},{name:"Physics",children:[{name:"Mechanics"},{name:"Thermodynamics",isNew:true}]}]},desc:"Refinement Phase 1 detects Solar↔Wind are related siblings (Category Entropy = 0.52, Importance = 0.41, Coverage Degree = 0.28/0.25 > relaxed threshold 0.20). Groups them under new 'Renewable' parent."},
+    {tree:{name:"Science",children:[{name:"Energy",children:[{name:"Fossil Fuels"},{name:"Nuclear"}]},{name:"Physics",children:[{name:"Mechanics"}]}]},
+     desc:"Base hierarchy from DMOZ Open Directory Project. We'll insert clusters one by one and watch the 3-test sequence determine where each one goes."},
+
+    {tree:{name:"Science",children:[{name:"Energy",highlight:C.accent,children:[{name:"Fossil Fuels"},{name:"Nuclear"},{name:"Solar Energy",isNew:true,highlight:C.green,tag:"CHILD of Energy"}]},{name:"Physics",children:[{name:"Mechanics"}]}]},
+     desc:<span><strong style={{color:C.green}}>Parent-Child Insertion — Solar Energy:</strong><br/>① Category Entropy = 0.72 ✓ (shares "photovoltaic", "energy conversion", "renewable" with Energy)<br/>② Importance = 0.65 &gt; high threshold 0.50 ✓ → proceed to Test 3<br/>③ Coverage Degree: Solar→Energy = <strong>0.63</strong> vs Energy→Solar = <strong>0.21</strong><br/>↳ <strong>Asymmetric</strong>: Solar's concepts live inside Energy, but Energy is much broader → Solar is <strong>CHILD</strong></span>},
+
+    {tree:{name:"Science",children:[{name:"Energy",highlight:C.accent,children:[{name:"Fossil Fuels"},{name:"Nuclear"},{name:"Solar Energy",isNew:true},{name:"Wind Energy",isNew:true,highlight:C.green,tag:"CHILD of Energy"}]},{name:"Physics",children:[{name:"Mechanics"}]}]},
+     desc:<span><strong style={{color:C.green}}>Parent-Child Insertion — Wind Energy:</strong><br/>① Category Entropy = 0.68 ✓ (shares "turbine", "renewable", "energy conversion" with Energy)<br/>② Importance = 0.59 &gt; high threshold 0.50 ✓ → proceed to Test 3<br/>③ Coverage Degree: Wind→Energy = <strong>0.59</strong> vs Energy→Wind = <strong>0.19</strong><br/>↳ <strong>Same pattern</strong> as Solar: asymmetric coverage → Wind is <strong>CHILD</strong> of Energy<br/><br/><em style={{color:C.dim}}>Note: Wind was also tested against Solar Energy — Category Entropy = 0.32 ✓ but Coverage Degree was symmetric (0.31 vs 0.28) → sibling, not child. So Wind goes under Energy, not under Solar.</em></span>},
+
+    {tree:{name:"Science",children:[{name:"Energy",children:[{name:"Fossil Fuels"},{name:"Nuclear"},{name:"Solar Energy",isNew:true},{name:"Wind Energy",isNew:true}]},{name:"Physics",highlight:C.accent,children:[{name:"Mechanics"},{name:"Thermodynamics",isNew:true,highlight:C.yellow,tag:"SIBLING of Mechanics"}]}]},
+     desc:<span><strong style={{color:C.yellow}}>Sibling Insertion — Thermodynamics:</strong><br/>① Category Entropy vs Mechanics = 0.45 ✓ (shares "force", "energy", "motion")<br/>② Importance = <strong>0.35</strong> → between low (0.20) and high (0.50)<br/>↳ <strong>Stops here</strong>: moderate importance means they're related but no containment evidence<br/>→ Classified as <strong>RELATED SIBLING</strong> — placed beside Mechanics, not under it<br/><br/><em style={{color:C.dim}}>Key difference from Solar/Wind: Importance didn't reach the high threshold, so Test 3 (Coverage Degree) was never run.</em></span>},
+
+    {tree:{name:"Science",children:[{name:"Energy",children:[{name:"Fossil Fuels"},{name:"Nuclear"},{name:"Renewable",isRefined:true,children:[{name:"Solar Energy",isNew:true},{name:"Wind Energy",isNew:true}]}]},{name:"Physics",children:[{name:"Mechanics"},{name:"Thermodynamics",isNew:true}]}]},
+     desc:<span><strong style={{color:C.orange}}>After Refinement Phase 1:</strong> Solar↔Wind detected as related siblings (Category Entropy = 0.52, Importance = 0.41, Coverage Degree = 0.28/0.25 &gt; relaxed threshold 0.20). Grouped under new 'Renewable' parent.<br/>Thermodynamics stays as a sibling of Mechanics — not related enough to Mechanics to be grouped (different sub-domains of physics).</span>},
   ];
   return <div>
     <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
-      {["Base Hierarchy","+ Solar Energy","+ Wind, Thermo","After Refinement"].map((l,i)=><button key={i} onClick={()=>setStep(i)} style={{padding:"8px 14px",fontSize:12,fontWeight:600,borderRadius:8,cursor:"pointer",background:step===i?C.green+"22":C.card,border:`1.5px solid ${step===i?C.green:C.border}`,color:step===i?C.green:C.muted,transition:"all 0.2s"}}>{l}</button>)}
+      {["Base Hierarchy","+ Solar (Child)","+ Wind (Child)","+ Thermo (Sibling)","After Refinement"].map((l,i)=><button key={i} onClick={()=>setStep(i)} style={{padding:"8px 14px",fontSize:12,fontWeight:600,borderRadius:8,cursor:"pointer",background:step===i?C.green+"22":C.card,border:`1.5px solid ${step===i?C.green:C.border}`,color:step===i?C.green:C.muted,transition:"all 0.2s"}}>{l}</button>)}
     </div>
-    <div style={{background:C.card,borderRadius:16,padding:24,border:`1px solid ${C.border}`,minHeight:180}}>{renderTree(trees[step].tree)}</div>
-    <div style={{marginTop:12,padding:"12px 16px",background:C.green+"0d",borderRadius:12,borderLeft:`3px solid ${C.green}`,fontSize:13,color:C.text,lineHeight:1.6}}>{trees[step].desc}</div>
+    <div style={{background:C.card,borderRadius:16,padding:24,border:`1px solid ${C.border}`,minHeight:200}}>{renderTree(trees[step].tree)}</div>
+    <div style={{marginTop:12,padding:"12px 16px",background:C.green+"0d",borderRadius:12,borderLeft:`3px solid ${C.green}`,fontSize:13,color:C.text,lineHeight:1.7}}>{trees[step].desc}</div>
   </div>;
 }
 
 function HierarchyDryRun(){
   const[step,setStep]=useState(0);
-  const names=["Test 1: Category Entropy (Do they share info?)","Test 2: Importance Measure (Are shared terms meaningful?)","Test 3: Coverage Degree (Which contains which?)"];
+  const names=["Test 1: Category Entropy","Test 2: Importance Measure","Test 3: Coverage Degree","Parent-Child vs Sibling"];
   const content=[
     <div key={0}><p style={{color:C.muted,marginBottom:10,fontSize:14}}>Gate test: Do "Solar Energy" (X) and "Energy" (Y) share enough information to warrant further comparison?</p><div style={codeBox(C.accent)}><div style={{color:C.accent,fontWeight:600,marginBottom:8}}>Category Entropy (document frequency-based) — measures how much concept information is shared:</div><div style={{color:C.dim,marginLeft:16}}>"photovoltaic": in 3 of 12 Energy docs → m/N = 0.25</div><div style={{color:C.dim,marginLeft:16}}>"solar cell": 4/12 → 0.33  |  "efficiency": 6/12 → 0.50</div><div style={{color:C.text,fontWeight:600,marginTop:6}}>Category Entropy (doc-based) = -Σ (m/N)×log(m/N) = {hn("0.72")}  |  Category Entropy (concept-based) = {hn("0.68")}</div><div style={{color:C.yellow,fontWeight:700,marginTop:8}}>Thresholds: low = 0.30 (doc-based), 0.25 (concept-based)</div></div>{decBox(true,"Category Entropy: 0.72 > 0.30 AND 0.68 > 0.25 → PASS (sufficient shared info) → Proceed to Test 2")}<div style={{marginTop:12,padding:"10px 14px",background:C.red+"0d",borderRadius:8,borderLeft:`3px solid ${C.red}`,fontSize:13,color:C.text}}><strong>Contrast:</strong> "Solar Energy" vs "Physics" → Category Entropy = 0.08 and 0.05 → both FAIL → <span style={{color:C.red}}>DISJOINT</span> (no meaningful shared info)</div></div>,
     <div key={1}><p style={{color:C.muted,marginBottom:10,fontSize:14}}>Are the shared concepts meaningful domain terms (not generic words like "data" or "system")?</p><div style={codeBox(C.accent)}><div style={{color:C.accent,fontWeight:600,marginBottom:8}}>Importance Measure — sums inverse document frequency (1/M) for each shared concept. Rare terms score higher:</div><div style={{color:C.dim,marginLeft:16}}>"photovoltaic": appears in M=3 docs across entire hierarchy → 1/3 = {hn("0.33",C.green)} (specific, high importance)</div><div style={{color:C.dim,marginLeft:16}}>"solar cell": M=4 → {hn("0.25",C.green)} (fairly specific)</div><div style={{color:C.dim,marginLeft:16}}>"efficiency": M=15 → {hn("0.07",C.orange)} (generic word, low importance)</div><div style={{color:C.text,fontWeight:600,marginTop:6}}>Importance Measure = 0.33 + 0.25 + 0.07 = {hn("0.65")}</div><div style={{height:6}}/><div style={{color:C.accent,fontWeight:600}}>Variance-based Importance — concepts with high frequency variation across docs are more discriminative:</div><div style={{color:C.text,fontWeight:600}}>Variance-based Importance = {hn("0.58")}</div><div style={{color:C.yellow,fontWeight:700,marginTop:8}}>Thresholds: low = 0.20, high = 0.50</div></div>{decBox(true,"Importance = 0.65 > high threshold (0.50) → HIGH confidence (shared terms are meaningful) → Proceed to Test 3")}{note(C.orange,<span><strong>What if Importance was between low and high?</strong> e.g., Importance = 0.35, Variance = 0.28 → meaningful but not strong enough for parent-child → classified as <strong>RELATED SIBLING</strong> (skip Test 3).</span>)}</div>,
     <div key={2}><p style={{color:C.muted,marginBottom:10,fontSize:14}}>Which category contains the other? Coverage Degree measures what fraction of one category's concepts appear in the other — the <em>asymmetry</em> reveals the parent-child direction.</p><div style={codeBox(C.green)}><div style={{color:C.green,fontWeight:600}}>Coverage Degree (Solar → Energy) = what fraction of Solar's concepts appear within Energy's documents:</div><div style={{color:C.dim,marginLeft:16}}>"photovoltaic": 3/12 docs, wt 0.6 → 0.15 | "solar cell": 4/12, wt 0.7 → 0.23 | "efficiency": 6/12, wt 0.5 → 0.25</div><div style={{color:C.text,fontWeight:600}}>Coverage Degree (Solar → Energy) = {hn("0.63",C.green)} — most of Solar's concepts ARE found in Energy</div><div style={{height:8}}/><div style={{color:C.green,fontWeight:600}}>Coverage Degree (Energy → Solar) = what fraction of Energy's concepts appear in Solar:</div><div style={{color:C.dim,marginLeft:16}}>Energy has 18 concepts; Solar only covers 5 of them partially</div><div style={{color:C.text,fontWeight:600}}>Coverage Degree (Energy → Solar) = {hn("0.21",C.orange)} — Energy's concepts are NOT mostly in Solar</div><div style={{height:8}}/><div style={{color:C.yellow,fontWeight:700}}>Threshold = 0.40</div><div style={{color:C.text,fontWeight:700,marginTop:6}}>0.63 &gt; 0.40 ✓ AND 0.63 &gt; 0.21 → Solar is CONTAINED within Energy (asymmetric coverage)</div></div>{decBox(true,"Coverage Degree confirms: Solar Energy → CHILD of Energy (Solar's concepts live inside Energy, but Energy is much broader)")}{arrDown()}<div style={{fontFamily:"monospace",fontSize:13,color:C.dim,lineHeight:2,background:C.card,padding:16,borderRadius:12,border:`1px solid ${C.border}`}}><div style={{color:C.text}}>Science/</div><div style={{marginLeft:20}}>├─ Energy/</div><div style={{marginLeft:40}}>├─ Fossil Fuels/ | ├─ Nuclear/</div><div style={{marginLeft:40}}>├─ <span style={{color:C.green,fontWeight:700}}>Solar Energy/</span> <span style={pill(C.green)}>INSERTED as child</span></div></div></div>,
+
+    /* NEW: Parent-Child vs Sibling comparison */
+    <div key={3}>
+      <p style={{color:C.muted,marginBottom:16,fontSize:14}}>The same 3-test sequence produces <strong>different outcomes</strong> based on the numbers. Here are two real insertions side by side:</p>
+
+      <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:16}}>
+        {/* Parent-Child card */}
+        <div style={{flex:"1 1 300px",background:C.surface,borderRadius:14,border:`2px solid ${C.green}44`,padding:18,position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:C.green}}/>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+            <span style={{...pill(C.green),fontSize:12,padding:"4px 10px"}}>PARENT-CHILD</span>
+            <span style={{fontSize:14,fontWeight:700,color:C.text}}>Solar Energy → Energy</span>
+          </div>
+          <div style={{fontSize:12,color:C.dim,lineHeight:1.8,fontFamily:"'Fira Code','Consolas',monospace"}}>
+            <div>Test 1: Category Entropy = {hn("0.72",C.green)} ✓</div>
+            <div style={{color:C.dim,fontSize:11,marginLeft:16,lineHeight:1.4,marginBottom:4}}>Shared concepts: "photovoltaic", "energy conversion", "renewable", "efficiency"</div>
+            <div>Test 2: Importance     = {hn("0.65",C.green)} &gt; high(0.50) ✓</div>
+            <div style={{color:C.dim,fontSize:11,marginLeft:16,lineHeight:1.4,marginBottom:4}}>Shared terms are domain-specific → proceed to Test 3</div>
+            <div>Test 3: Coverage Degree</div>
+            <div style={{marginLeft:16}}>Solar → Energy = {hn("0.63",C.green)} <span style={{color:C.dim}}>(Solar's concepts found in Energy)</span></div>
+            <div style={{marginLeft:16}}>Energy → Solar = {hn("0.21",C.orange)} <span style={{color:C.dim}}>(Energy is much broader)</span></div>
+            <div style={{marginTop:6,color:C.green,fontWeight:700}}>→ Asymmetric: 0.63 ≫ 0.21 → Solar is CHILD</div>
+          </div>
+          <div style={{marginTop:12,fontFamily:"monospace",fontSize:12,color:C.dim,lineHeight:1.8,background:C.bg,borderRadius:8,padding:10}}>
+            <div>Energy/</div>
+            <div style={{marginLeft:16}}>├─ Fossil Fuels/</div>
+            <div style={{marginLeft:16}}>├─ Nuclear/</div>
+            <div style={{marginLeft:16}}>└─ <span style={{color:C.green,fontWeight:700}}>Solar Energy/ ← inserted UNDER Energy</span></div>
+          </div>
+          <div style={{marginTop:10,fontSize:11,color:C.green,fontStyle:"italic"}}>Key insight: high asymmetry in Coverage Degree means one category "contains" the other → parent-child</div>
+        </div>
+
+        {/* Sibling card */}
+        <div style={{flex:"1 1 300px",background:C.surface,borderRadius:14,border:`2px solid ${C.yellow}44`,padding:18,position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:C.yellow}}/>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+            <span style={{...pill(C.yellow),fontSize:12,padding:"4px 10px"}}>RELATED SIBLING</span>
+            <span style={{fontSize:14,fontWeight:700,color:C.text}}>Thermodynamics → Mechanics</span>
+          </div>
+          <div style={{fontSize:12,color:C.dim,lineHeight:1.8,fontFamily:"'Fira Code','Consolas',monospace"}}>
+            <div>Test 1: Category Entropy = {hn("0.45",C.green)} ✓</div>
+            <div style={{color:C.dim,fontSize:11,marginLeft:16,lineHeight:1.4,marginBottom:4}}>Shared concepts: "force", "energy", "motion", "physics"</div>
+            <div>Test 2: Importance     = {hn("0.35",C.yellow)} → between low(0.20) and high(0.50)</div>
+            <div style={{color:C.dim,fontSize:11,marginLeft:16,lineHeight:1.4,marginBottom:4}}>Shared terms are meaningful but not strong enough for containment</div>
+            <div style={{color:C.yellow,fontWeight:600}}>→ STOP at Test 2 — skip Test 3 entirely</div>
+            <div style={{marginTop:4,color:C.dim,fontSize:11}}>Importance between low and high = related but no parent-child evidence</div>
+          </div>
+          <div style={{marginTop:12,fontFamily:"monospace",fontSize:12,color:C.dim,lineHeight:1.8,background:C.bg,borderRadius:8,padding:10}}>
+            <div>Physics/</div>
+            <div style={{marginLeft:16}}>├─ Mechanics/</div>
+            <div style={{marginLeft:16}}>└─ <span style={{color:C.yellow,fontWeight:700}}>Thermodynamics/ ← inserted BESIDE Mechanics</span></div>
+          </div>
+          <div style={{marginTop:10,fontSize:11,color:C.yellow,fontStyle:"italic"}}>Key insight: moderate Importance means they're related but neither contains the other → sibling</div>
+        </div>
+      </div>
+
+      {/* Decision flowchart */}
+      <div style={{background:C.card,borderRadius:12,padding:16,border:`1px solid ${C.border}`}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>Decision Flowchart Summary</div>
+        <div style={{fontSize:12,color:C.muted,lineHeight:2.0,fontFamily:"'Fira Code','Consolas',monospace"}}>
+          <div>Test 1 (Category Entropy) <span style={{color:C.dim}}>──── FAIL ──→</span> <span style={{color:C.red,fontWeight:600}}>DISJOINT</span> <span style={{color:C.dim}}>(e.g., Solar vs Physics = 0.08)</span></div>
+          <div><span style={{color:C.dim}}>  │ PASS</span></div>
+          <div>Test 2 (Importance)       <span style={{color:C.dim}}>──── FAIL ──→</span> <span style={{color:C.red,fontWeight:600}}>DISJOINT</span></div>
+          <div><span style={{color:C.dim}}>  │ PASS (low-mid)</span> <span style={{color:C.dim}}>─────────→</span> <span style={{color:C.yellow,fontWeight:600}}>RELATED SIBLING</span> <span style={{color:C.dim}}>(e.g., Thermo: IM=0.35)</span></div>
+          <div><span style={{color:C.dim}}>  │ PASS (high)</span></div>
+          <div>Test 3 (Coverage Degree)  <span style={{color:C.dim}}>── asymmetric →</span> <span style={{color:C.green,fontWeight:600}}>PARENT-CHILD</span> <span style={{color:C.dim}}>(e.g., Solar: CD=0.63 vs 0.21)</span></div>
+          <div><span style={{color:C.dim}}>                          ── symmetric ──→</span> <span style={{color:C.yellow,fontWeight:600}}>SIBLING</span> <span style={{color:C.dim}}>(e.g., CD=0.35 vs 0.32)</span></div>
+          <div><span style={{color:C.dim}}>                          ── both high ──→</span> <span style={{color:C.magenta,fontWeight:600}}>EXACT MATCH → MERGE</span> <span style={{color:C.dim}}>(via Mutual Information)</span></div>
+        </div>
+      </div>
+    </div>,
   ];
   return <div>
     <StepNav steps={names} active={step} onChange={setStep} color={C.green}/>
@@ -302,16 +384,152 @@ function RefinementSection(){
 
 function RefinementInteractive(){
   const[phase,setPhase]=useState(0);
-  const trees=[
-    <div key={0} style={{fontFamily:"monospace",fontSize:13,color:C.dim,lineHeight:2.1}}><div style={{color:C.text}}>Science/</div><div style={{marginLeft:20}}>├─ Energy/</div><div style={{marginLeft:40}}>├─ Fossil Fuels/</div><div style={{marginLeft:40}}>├─ Nuclear/</div><div style={{marginLeft:40}}>├─ <span style={{color:C.cyan}}>Solar Energy/</span></div><div style={{marginLeft:40}}>├─ <span style={{color:C.green}}>Wind Energy/</span></div><div style={{marginLeft:40}}>├─ <span style={{color:C.magenta}}>Geothermal/</span></div><div style={{marginLeft:40}}>├─ <span style={{color:C.orange}}>Hydropower/</span></div></div>,
-    <div key={1} style={{fontFamily:"monospace",fontSize:13,color:C.dim,lineHeight:2.1}}><div style={{color:C.text}}>Science/</div><div style={{marginLeft:20}}>├─ Energy/</div><div style={{marginLeft:40}}>├─ Fossil Fuels/</div><div style={{marginLeft:40}}>├─ Nuclear/</div><div style={{marginLeft:40}}>├─ <span style={{color:C.orange,fontWeight:700}}>Renewable Energy/</span> <span style={pill(C.orange)}>NEW PARENT</span></div><div style={{marginLeft:60}}>├─ <span style={{color:C.cyan}}>Solar Energy/</span></div><div style={{marginLeft:60}}>├─ <span style={{color:C.green}}>Wind Energy/</span></div><div style={{marginLeft:60}}>├─ <span style={{color:C.magenta}}>Geothermal/</span></div><div style={{marginLeft:60}}>├─ <span style={{color:C.orange}}>Hydropower/</span></div></div>,
-    <div key={2} style={{fontFamily:"monospace",fontSize:13,color:C.dim,lineHeight:2.1}}><div style={{color:C.text}}>Science/</div><div style={{marginLeft:20}}>├─ Energy/</div><div style={{marginLeft:40}}>├─ Fossil Fuels/</div><div style={{marginLeft:40}}>├─ Nuclear/</div><div style={{marginLeft:40}}>├─ <span style={{color:C.orange,fontWeight:700}}>Renewable Energy/</span></div><div style={{marginLeft:60}}>├─ <span style={{color:C.cyan}}>Solar Energy/</span> <span style={pill(C.magenta)}>merged "Solar Power"</span></div><div style={{marginLeft:60}}>├─ <span style={{color:C.green}}>Wind Energy/</span></div><div style={{marginLeft:60}}>├─ <span style={{color:C.magenta}}>Geothermal/</span></div><div style={{marginLeft:60}}>├─ <span style={{color:C.orange}}>Hydropower/</span></div><div style={{marginLeft:20}}>├─ Physics/</div><div style={{marginLeft:40}}>├─ Mechanics/</div><div style={{marginLeft:40}}>├─ <del style={{color:C.red}}>Solar Power/</del> <span style={{fontSize:10,color:C.red}}>REMOVED (merged into Solar Energy)</span></div></div>,
+  const[selectedPair,setSelectedPair]=useState(null);
+
+  /* Phase 0: Before — flat siblings */
+  /* Phase 1: Click pairwise comparisons */
+  /* Phase 2: After Phase 1 — grouped under new parent */
+  /* Phase 3: Existing category absorbs children (Algorithms example) */
+  /* Phase 4: After Phase 2 — merge duplicates */
+
+  const pairData={
+    "Solar↔Wind":{ce:0.52,im:0.41,cd1:0.28,cd2:0.25,result:"related",reason:"Both share 'renewable', 'energy conversion', 'power generation' — related renewable sources"},
+    "Solar↔Geo":{ce:0.45,im:0.38,cd1:0.22,cd2:0.19,result:"related",reason:"Share 'renewable energy', 'power plant', 'electricity generation' — different renewable technologies"},
+    "Solar↔Fossil":{ce:0.15,im:0.08,cd1:0.05,cd2:0.04,result:"disjoint",reason:"Category Entropy 0.15 < 0.30 threshold — FAIL at gate. Fossil fuels and solar have almost no concept overlap"},
+    "Wind↔Geo":{ce:0.48,im:0.36,cd1:0.24,cd2:0.21,result:"related",reason:"Share 'renewable', 'power capacity', 'environmental impact' — similar renewable energy profile"},
+    "Wind↔Nuclear":{ce:0.12,im:0.06,cd1:0.03,cd2:0.03,result:"disjoint",reason:"Category Entropy 0.12 < 0.30 — FAIL. Wind and nuclear use completely different technologies"},
+    "Fossil↔Nuclear":{ce:0.22,im:0.14,cd1:0.10,cd2:0.08,result:"disjoint",reason:"Category Entropy 0.22 < 0.30 — FAIL at gate. Different energy sources with different concept vocabularies"},
+  };
+
+  const allPairs=Object.keys(pairData);
+
+  const phases=[
+    // Phase 0: Before
+    <div key={0}>
+      <div style={{fontFamily:"monospace",fontSize:13,color:C.dim,lineHeight:2.1,background:C.card,borderRadius:12,padding:16,border:`1px solid ${C.border}`}}>
+        <div style={{color:C.text}}>Science/</div>
+        <div style={{marginLeft:20}}>├─ Energy/</div>
+        <div style={{marginLeft:40}}>├─ Fossil Fuels/</div>
+        <div style={{marginLeft:40}}>├─ Nuclear/</div>
+        <div style={{marginLeft:40}}>├─ <span style={{color:C.cyan}}>Solar Energy/</span> <span style={{fontSize:10,color:C.dim}}>(inserted round 1)</span></div>
+        <div style={{marginLeft:40}}>├─ <span style={{color:C.green}}>Wind Energy/</span> <span style={{fontSize:10,color:C.dim}}>(inserted round 2)</span></div>
+        <div style={{marginLeft:40}}>├─ <span style={{color:C.magenta}}>Geothermal/</span> <span style={{fontSize:10,color:C.dim}}>(inserted round 3)</span></div>
+        <div style={{marginLeft:40}}>├─ <span style={{color:C.orange}}>Hydropower/</span> <span style={{fontSize:10,color:C.dim}}>(inserted round 3)</span></div>
+      </div>
+      {note(C.orange,<span>After multiple insertion rounds, six categories sit as flat siblings under Energy. The hierarchy needs reorganization — Solar, Wind, Geothermal, Hydropower are all renewable sources and should be grouped together.</span>)}
+    </div>,
+
+    // Phase 1: Interactive pairwise comparison
+    <div key={1}>
+      <p style={{color:C.muted,marginBottom:12,fontSize:14}}>Phase 1 tests <strong>every pair</strong> of siblings. Click any pair below to see the comparison:</p>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:16}}>
+        {allPairs.map(pair=>{
+          const d=pairData[pair];const active=selectedPair===pair;
+          const col=d.result==="related"?C.green:C.red;
+          return <button key={pair} onClick={()=>setSelectedPair(active?null:pair)} style={{padding:"8px 14px",fontSize:12,fontWeight:600,borderRadius:8,cursor:"pointer",background:active?col+"22":C.card,border:`1.5px solid ${active?col:C.border}`,color:active?col:C.muted,transition:"all 0.2s"}}>{pair} {d.result==="related"?"✓":"✗"}</button>;
+        })}
+      </div>
+      {selectedPair&&(()=>{
+        const d=pairData[selectedPair];const isRelated=d.result==="related";const col=isRelated?C.green:C.red;
+        return <div style={{animation:"fadeIn 0.3s ease"}}>
+          <div style={{background:C.surface,borderRadius:12,padding:16,border:`1.5px solid ${col}33`,marginBottom:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+              <span style={{fontSize:15,fontWeight:700,color:C.text}}>{selectedPair}</span>
+              <span style={pill(col)}>{isRelated?"RELATED":"DISJOINT"}</span>
+            </div>
+            <div style={{fontFamily:"'Fira Code','Consolas',monospace",fontSize:12,lineHeight:2,color:C.dim}}>
+              <div>Category Entropy     = {hn(d.ce.toFixed(2),d.ce>=0.30?C.green:C.red)} {d.ce>=0.30?"✓ > 0.30":<span style={{color:C.red}}>✗ &lt; 0.30 → FAIL (gate test)</span>}</div>
+              {d.ce>=0.30&&<div>Importance Measure   = {hn(d.im.toFixed(2),d.im>=0.20?C.green:C.red)} {d.im>=0.20?"✓ > 0.20":"✗"}</div>}
+              {d.ce>=0.30&&d.im>=0.20&&<div>Coverage Degree      = {hn(d.cd1.toFixed(2),C.cyan)} / {hn(d.cd2.toFixed(2),C.cyan)} {d.cd1>=0.20&&d.cd2>=0.20?"✓ both > 0.20 (relaxed threshold)":"✗"}</div>}
+            </div>
+            <div style={{marginTop:8,fontSize:12,color:col,fontStyle:"italic"}}>{d.reason}</div>
+          </div>
+        </div>;
+      })()}
+      {!selectedPair&&<div style={{background:C.surface,borderRadius:12,padding:16,border:`1px solid ${C.border}`,textAlign:"center",color:C.dim,fontSize:13}}>Click any pair above to see the pairwise comparison with actual measure values</div>}
+      <div style={{marginTop:12,padding:"10px 14px",background:C.green+"0d",borderRadius:8,borderLeft:`3px solid ${C.green}`,fontSize:13,color:C.text}}>
+        <strong>Result:</strong> Solar↔Wind ✓, Solar↔Geo ✓, Wind↔Geo ✓, Solar↔Hydro ✓, Wind↔Hydro ✓, Geo↔Hydro ✓ → they form a <strong>connected group</strong>. Fossil↔any ✗, Nuclear↔any ✗ → stay separate.
+      </div>
+    </div>,
+
+    // Phase 2: Grouped under new parent
+    <div key={2}>
+      <div style={{fontFamily:"monospace",fontSize:13,color:C.dim,lineHeight:2.1,background:C.card,borderRadius:12,padding:16,border:`1px solid ${C.border}`}}>
+        <div style={{color:C.text}}>Science/</div>
+        <div style={{marginLeft:20}}>├─ Energy/</div>
+        <div style={{marginLeft:40}}>├─ Fossil Fuels/</div>
+        <div style={{marginLeft:40}}>├─ Nuclear/</div>
+        <div style={{marginLeft:40}}>├─ <span style={{color:C.orange,fontWeight:700}}>Renewable Energy/</span> <span style={pill(C.orange)}>NEW PARENT</span></div>
+        <div style={{marginLeft:60}}>├─ <span style={{color:C.cyan}}>Solar Energy/</span></div>
+        <div style={{marginLeft:60}}>├─ <span style={{color:C.green}}>Wind Energy/</span></div>
+        <div style={{marginLeft:60}}>├─ <span style={{color:C.magenta}}>Geothermal/</span></div>
+        <div style={{marginLeft:60}}>├─ <span style={{color:C.orange}}>Hydropower/</span></div>
+      </div>
+      {note(C.orange,<span>Phase 1 creates "Renewable Energy" as a new parent from the <strong>common concepts</strong> of the related group (renewable, power generation, clean energy). Fossil Fuels and Nuclear remain direct children of Energy — they failed the gate test against the renewable group.</span>)}
+    </div>,
+
+    // Phase 3: Existing category absorbs children
+    <div key={3}>
+      <p style={{color:C.muted,marginBottom:12,fontSize:14}}>Phase 1 doesn't always create <em>new</em> parents — it can also detect that an <strong>existing base category</strong> should absorb related clusters:</p>
+      <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:12}}>
+        <div style={{flex:"1 1 280px",fontFamily:"monospace",fontSize:12,color:C.dim,lineHeight:2,background:C.surface,borderRadius:10,padding:14,border:`1px solid ${C.red}33`}}>
+          <div style={{fontFamily:"sans-serif",fontSize:13,fontWeight:700,color:C.red,marginBottom:6}}>Before (flat siblings under Science/)</div>
+          <div>Science/</div>
+          <div style={{marginLeft:16}}>├─ <span style={{color:C.accent}}>Theory and Algorithms/</span> <span style={{fontSize:10,color:C.dim}}>← existing</span></div>
+          <div style={{marginLeft:16}}>├─ <span style={{color:C.cyan}}>Sorting Algorithms/</span> <span style={{fontSize:10,color:C.dim}}>← new cluster</span></div>
+          <div style={{marginLeft:16}}>├─ <span style={{color:C.green}}>Graph Algorithms/</span> <span style={{fontSize:10,color:C.dim}}>← new cluster</span></div>
+          <div style={{marginLeft:16}}>├─ <span style={{color:C.magenta}}>Data Structures/</span> <span style={{fontSize:10,color:C.dim}}>← new cluster</span></div>
+        </div>
+        <div style={{flex:"1 1 280px",fontFamily:"monospace",fontSize:12,color:C.dim,lineHeight:2,background:C.surface,borderRadius:10,padding:14,border:`1px solid ${C.green}33`}}>
+          <div style={{fontFamily:"sans-serif",fontSize:13,fontWeight:700,color:C.green,marginBottom:6}}>After (existing category becomes parent)</div>
+          <div>Science/</div>
+          <div style={{marginLeft:16}}>├─ <span style={{color:C.accent,fontWeight:700}}>Theory and Algorithms/</span> <span style={pill(C.accent)}>EXISTING → parent</span></div>
+          <div style={{marginLeft:32}}>├─ <span style={{color:C.cyan}}>Sorting Algorithms/</span></div>
+          <div style={{marginLeft:32}}>├─ <span style={{color:C.green}}>Graph Algorithms/</span></div>
+          <div style={{marginLeft:32}}>├─ <span style={{color:C.magenta}}>Data Structures/</span></div>
+        </div>
+      </div>
+      <div style={{background:C.card,borderRadius:12,padding:16,border:`1px solid ${C.border}`,marginBottom:12}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.accent,marginBottom:8}}>How it works:</div>
+        <div style={{fontSize:12,color:C.muted,lineHeight:1.8}}>
+          <div>1. Phase 1 finds {`{Sorting, Graph, Data Structures}`} are all related (Category Entropy ≥ 0.30 pairwise)</div>
+          <div>2. Before creating a <em>new</em> parent, it checks: <strong>does any existing sibling already match this group?</strong></div>
+          <div>3. Tests "Theory and Algorithms" against the group's aggregated concepts:</div>
+          <div style={{marginLeft:16}}>Category Entropy({hn("Theory & Algo",C.accent)}, {hn("group",C.green)}) = {hn("0.71",C.green)} ✓ | Importance = {hn("0.55",C.green)} ✓ | Coverage Degree = {hn("0.48",C.green)} &gt; {hn("0.15",C.dim)} ✓</div>
+          <div>4. <strong>Match found!</strong> → moves the group under the existing "Theory and Algorithms" instead of creating a new parent</div>
+        </div>
+      </div>
+      {note(C.accent,<span>This is a key advantage: the refinement module reuses existing hierarchy structure when possible, keeping the tree clean instead of creating redundant intermediate categories.</span>)}
+    </div>,
+
+    // Phase 4: Phase 2 merge
+    <div key={4}>
+      <div style={{fontFamily:"monospace",fontSize:13,color:C.dim,lineHeight:2.1,background:C.card,borderRadius:12,padding:16,border:`1px solid ${C.border}`}}>
+        <div style={{color:C.text}}>Science/</div>
+        <div style={{marginLeft:20}}>├─ Energy/</div>
+        <div style={{marginLeft:40}}>├─ Fossil Fuels/</div>
+        <div style={{marginLeft:40}}>├─ Nuclear/</div>
+        <div style={{marginLeft:40}}>├─ <span style={{color:C.orange,fontWeight:700}}>Renewable Energy/</span></div>
+        <div style={{marginLeft:60}}>├─ <span style={{color:C.cyan}}>Solar Energy/</span> <span style={pill(C.magenta)}>merged "Solar Power" (MI=0.82)</span></div>
+        <div style={{marginLeft:60}}>├─ <span style={{color:C.green}}>Wind Energy/</span></div>
+        <div style={{marginLeft:60}}>├─ <span style={{color:C.magenta}}>Geothermal/</span></div>
+        <div style={{marginLeft:60}}>├─ <span style={{color:C.orange}}>Hydropower/</span></div>
+        <div style={{marginLeft:20}}>├─ Physics/</div>
+        <div style={{marginLeft:40}}>├─ Mechanics/</div>
+        <div style={{marginLeft:40}}>├─ <del style={{color:C.red}}>Solar Power/</del> <span style={{fontSize:10,color:C.red}}>REMOVED (MI = 0.82 &gt; 0.70 → equivalent to Solar Energy)</span></div>
+      </div>
+      {note(C.magenta,<span><strong>Phase 2 (Merging):</strong> "Solar Power" was incorrectly placed under Physics in a previous round. Mutual Information between "Solar Energy" and "Solar Power" = 0.82 &gt; threshold 0.70 → they share 80%+ of their concept vocabulary → <strong>equivalent categories → merge</strong>. Solar Power's concepts and documents are absorbed into Solar Energy.</span>)}
+    </div>,
   ];
-  const descs=["After multiple insertion rounds, four renewable energy sources sit as flat siblings under Energy/. The hierarchy is getting cluttered.","Phase 1 tests pairwise relatedness: Solar↔Wind Category Entropy = 0.52 ✓, Solar↔Fossil Category Entropy = 0.15 ✗. Groups {Solar, Wind, Geothermal, Hydropower} under new 'Renewable Energy' parent.","Phase 2 finds Mutual Information(Solar Energy, Solar Power) = 0.82 > threshold 0.70 → they're equivalent. Merges 'Solar Power' from Physics/ into 'Solar Energy', combining their concept and document sets."];
+
+  const labels=["Before","Pairwise Comparison","After Grouping","Existing Cat as Parent","After Merging"];
+
   return <div>
-    <div style={{display:"flex",gap:8,marginBottom:20}}>{["Before Refinement","After Phase 1 (Grouping)","After Phase 2 (Merging)"].map((l,i)=><button key={i} onClick={()=>setPhase(i)} style={{flex:1,padding:"10px 8px",fontSize:12,fontWeight:600,background:phase===i?C.orange+"22":C.card,border:`1.5px solid ${phase===i?C.orange:C.border}`,color:phase===i?C.orange:C.muted,borderRadius:10,cursor:"pointer",transition:"all 0.3s"}}>{l}</button>)}</div>
-    <div style={{background:C.card,borderRadius:16,padding:24,border:`1px solid ${C.border}`,minHeight:180}}>{trees[phase]}</div>
-    <div style={{marginTop:12,padding:"12px 16px",background:C.orange+"0d",borderRadius:12,borderLeft:`3px solid ${C.orange}`,fontSize:13,color:C.text,lineHeight:1.6}}>{descs[phase]}</div>
+    <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
+      {labels.map((l,i)=><button key={i} onClick={()=>{setPhase(i);setSelectedPair(null)}} style={{padding:"8px 12px",fontSize:12,fontWeight:600,background:phase===i?C.orange+"22":C.card,border:`1.5px solid ${phase===i?C.orange:C.border}`,color:phase===i?C.orange:C.muted,borderRadius:8,cursor:"pointer",transition:"all 0.2s"}}>{l}</button>)}
+    </div>
+    {phases[phase]}
+    <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
   </div>;
 }
 
